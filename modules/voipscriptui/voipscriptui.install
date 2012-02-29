@@ -1,0 +1,89 @@
+<?php
+/**
+ * Implementation of hook_install().
+ */
+function voipscriptui_install() {
+  node_types_rebuild();
+  $types = node_type_get_types();
+  node_add_body_field($types['voipscriptui']);
+  
+  $body_instance = field_info_instance('node', 'body', 'voipscriptui');
+  
+  $body_instance['type'] = 'text_summary_or_trimmed';
+  
+  field_update_instance($body_instance);
+  
+  foreach(_voipscriptui_installed_fields() as $field) {
+	field_create_field($field);
+  }
+  
+  foreach(_voipscriptui_installed_instances() as $instance) {
+	$instance['entity_type'] = 'node';
+	$instance['bundle'] = 'voipscriptui';
+	field_create_instance($instance);
+  }
+}
+
+function _voipscriptui_installed_fields() {
+  $t = get_t();
+  return array(
+	'voipscriptui_code' => array(
+	  'field_name' => 'voipscriptui_code',
+	  'label' => $t('VoIP script code'),
+	  'type' => 'text_long',
+	),
+  );
+}
+
+function _voipscriptui_installed_instances() {
+  $t = get_t();
+  return array(
+	'voipscriptui_code' => array(
+	  'field_name' => 'voipscriptui_code',
+	  'type' => 'text_long',
+	  'label' => $t('VoIP script code'),
+	  'widget' => array('type' => 'text_textarea'),
+	  'display' => array(
+		'voipscriptui_list' => array(
+		  'label' => $t('VoIP script code'),
+		  'type' => 'text_long',
+		),
+	  ),
+	),
+  );
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function voipscriptui_uninstall() {
+  // Retrieve all voipscriptui content generated while the module was enabled
+  $result = db_select('node', 'n')
+	->fields('n', array('nid'))
+	->condition('type', 'voipscriptui')
+	->execute();
+  $nids = array();
+  foreach($result as $row) {
+	$nids[] = $row->nid;
+  }
+  
+  // Delete all nodes simultaneously
+  node_delete_multiple($nids);
+  
+  // Delete all fields defined by the module
+  foreach(array_keys(_voipscriptui_installed_fields()) as $field) {
+	field_delete_field($field);
+  }
+  
+  // Delete all field instances
+  $instances = field_info_instances('node', 'voipscriptui');
+  foreach($instances as $instance_name => $instance) {
+	field_delete_instance($instance);
+  }
+  
+  // Delete voipscriptui content type
+  node_type_delete('voipscriptui');
+  
+  // Purge all field info
+  field_purge_batch(1000);
+}

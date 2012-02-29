@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Implements hook_views_default_views().
+ * Implementation of hook_views_default_views().
  */
 function voipscriptui_views_default_views() {
   $views = array();

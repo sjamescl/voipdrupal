@@ -1,13 +1,12 @@
+name = VoIP Script UI
+description = Provides a web-based interface for developers to create and test VoIP Drupal scripts.
+package = VoIP Drupal
+project = voipscriptui
 core = 7.x
-description = "Provides a web-based interface for developers to create and test VoIP Drupal scripts"
-name = "VoIP Script UI"
-package = "VoIP Drupal"
-project = "voipscriptui"
 
-dependencies[] = "features"
-dependencies[] = "text"
-dependencies[] = "views"
+features[content][] = voipscriptui-field_voipscriptui_code
+features[node][] = voipscriptui
 
-features[content][] = "voipscriptui-field_voipscriptui_code"
-features[node][] = "voipscriptui"
-
+dependencies[] = features
+dependencies[] = text
+dependencies[] = views
