@@ -33,10 +33,16 @@ class VoipSession {
     }
     
     public static function getSessionByInboundNumber($origin_number, $destination_number) {
-      $session_data = db_fetch_object(db_query("SELECT * FROM {voipsession} WHERE origin_number='%s' AND destination_number='%s'", $origin_number, $destination_number));
+	  $result = db_select('voipsession', 's')
+		->fields('s')
+		->condtion(db_and()->condition('origin_number', $origin_number)->condition('destination_number', $destination_number))
+		->execute();
+	$session_data = $result->fetchObject();
       if ($session_data->expiring_at < time()) {
         //Delete this session, its expired
-        db_query("DELETE FROM {voipsession} WHERE sid=%d", $session_data->sid);
+		db_delete('voipsession')
+			->condition('sid', $session_data->sid)
+			->execute();
         return FALSE;
       }
       if ($session_data) {
@@ -48,10 +54,16 @@ class VoipSession {
     }
     
     public static function getSessionByOutboundNumber($origin_number, $destination_number) {
-      $session_data = db_fetch_object(db_query("SELECT * FROM {voipsession} WHERE origin_number='%s' AND destination_number='%s'", $destination_number, $origin_number));
+	  $result = db_select('voipsession', 's')
+		->fields('s')
+		->condtion(db_and()->condition('origin_number', $destination_number)->condition('destination_number', $origin_number))
+		->execute();	
+      $session_data = $result->fetchObject();
       if ($session_data->expiring_at < time()) {
         //Delete this session, its expired
-        db_query("DELETE FROM {voipsession} WHERE sid=%d", $session_data->sid);
+		db_delete('voipsession')
+			->condition('sid', $session_data->sid)
+			->execute();
         return FALSE;
       }
       if ($session_data) {
@@ -72,10 +84,16 @@ class VoipSession {
           $search_number = $destination_number;
         }
         
-        $session_data = db_fetch_object(db_query("SELECT * FROM {voipsession} WHERE origin_number='%s' || destination_number='%s'", $search_number, $search_number));
+		$result = db_select('voipsession', 's')
+			->fields('s')
+			->condtion(db_or()->condition('origin_number',  $search_number)->condition('destination_number',  $search_number))
+			->execute();	
+		$session_data = $result->fetchObject();		
           if ($session_data->expiring_at < time()) {
             //Delete this session, its expired
-            db_query("DELETE FROM {voipsession} WHERE sid=%d", $session_data->sid);
+			db_delete('voipsession')
+				->condition('sid', $session_data->sid)
+				->execute();
             $session_data = NULL;
           }
 
@@ -98,10 +116,16 @@ class VoipSession {
    *    Session instance or FALSE.
    */
     public static function getSessionByCid($cid){
-      $session_data = db_fetch_object(db_query("SELECT * FROM {voipsession} WHERE call_id=%d", $cid));
+	  $result = db_select('voipsession', 's')
+		->fields('s')
+		->condition('call_id', $cid)
+		->execute();
+	  $session_data = $result->fetchObject();
       if ($session_data->expiring_at < time()) {
         //Delete this session, its expired
-        db_query("DELETE FROM {voipsession} WHERE sid=%d", $session_data->sid);
+		db_delete('voipsession')
+			->condition('sid', $session_data->sid)
+			->execute();
         return false;
       }
       if ($session_data) {
@@ -123,12 +147,17 @@ class VoipSession {
       $time = time();
       
       //Get call ids of deleted sessions
-      $res = db_query("SELECT * FROM {voipsession} WHERE expiring_at<'%s'", $time);
-      while($session = db_fetch_object($res)) {
+	  $result = db_select('voipsession', 's')
+		->fields('s')
+		->condition('expiring_at', $time, '<')
+		->execute();
+      while($session = $result->fetchObject()) {
         $deleted_call_ids[] = $session->call_id;
       }
       //Delete the sessions
-      db_query("DELETE FROM {voipsession} WHERE expiring_at<'%s'",$time);
+      db_delete('voipsession')
+		->condition('expiring_at', $time, '<')
+		->execute();
       return $deleted_call_ids;
     }
 
@@ -208,7 +237,11 @@ class VoipSession {
       }
       else {
         // load the data
-        $data = db_fetch_object(db_query("SELECT * FROM {voipsession} WHERE sid=%d", $this->session_data->sid));
+		$result = db_select('voipsession', 's')
+			->fields('s')
+			->condtion('sid', $this->session_data->sid)
+			->execute();
+		$data = $result->fetchObject();
         $update = 'sid';
       }
      
@@ -241,7 +274,9 @@ class VoipSession {
     public function destroy() {
       $sid = $this->session_data->sid;
       if ($sid) {
-        db_query("DELETE FROM {voipsession} WHERE sid=%d", $sid);
+		db_delete('voipsession')
+			->condition('sid', $sid)
+			->execute();
       }
       watchdog('voipsession',"Destroying session $sid");
       $this->session_data = NULL;
